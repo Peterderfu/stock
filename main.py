@@ -4,7 +4,7 @@ import pandas as pd
 import finlab
 from talib import MA_Type
 from peterlib import rotation_break,My_BBANDS
-
+import pandas_ta as ta
 # broker_name = data.get('broker_mapping')
 # bt = data.get('broker_transactions',save_to_storage=True).tail(200)
 
@@ -45,8 +45,16 @@ if __name__=="__main__":
     with open("finlab_token.txt",mode='r') as f:
         finlab.login(f.readline())
     data.set_storage(data.CacheStorage())
+    # close = data.get('price:收盤價')
+    # high  = data.get('price:最高價')
+    # low   = data.get('price:最低價')
 
-    search_BB_Uband_hit(data)
+    K = data.indicator('kdj')[0]
+    # xx=ta.kdj(high=high,low=low,close=data)
+    K_GT_80 = K[K.loc['2021':'2022',['2231']]>80].dropna()
+    print(K_GT_80)
+    pass
+    # search_BB_Uband_hit(data)
 #############################################################
     # #BBand帶寬%, 5%以下=>窄
     # W=6
