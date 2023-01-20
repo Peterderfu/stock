@@ -49,10 +49,20 @@ if __name__=="__main__":
     # high  = data.get('price:最高價')
     # low   = data.get('price:最低價')
 
-    K = data.indicator('kdj')[0]
-    # xx=ta.kdj(high=high,low=low,close=data)
-    K_GT_80 = K[K.loc['2021':'2022',['2231']]>80].dropna()
-    print(K_GT_80)
+    K = data.indicator('kdj',length=24)[0]
+    K_GT_80 = K[K.loc['2021':'2023',['9906']]>80]
+    xxx=dict()
+    for c in K_GT_80.columns:
+        print(c)
+        Day_GT_80_2231 = K_GT_80[c].dropna().index
+        Day_EQ_50_2231 = set()
+        for d in Day_GT_80_2231:
+            GT = K[K.loc[K.index<d,[c]]<50].dropna()
+            if not GT.empty:
+                Day_EQ_50_2231.add(GT.index[-1])
+        if len(Day_EQ_50_2231)>0:
+            y = list(sorted(Day_EQ_50_2231))
+            xxx[c]=y
     pass
     # search_BB_Uband_hit(data)
 #############################################################
