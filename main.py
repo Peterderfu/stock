@@ -1,7 +1,7 @@
 from finlab.dataframe import FinlabDataFrame
 from finlab import data, backtest
 import pandas as pd
-import finlab
+import finlab,argparse
 from talib import MA_Type
 from peterlib import rotation_break,My_BBANDS
 import pandas_ta as ta
@@ -38,9 +38,20 @@ def search_BB_Uband_hit(data):
                 info.append(day)
                     
             print(name+",".join(info)) 
-# def rotation_break
 
+def get_K_GT(period,stock,length,threshold):
+#return the dates with K>threshold of the stock
+    K = data.indicator('kdj',length=length)[0]
+    output=dict()
+    for s in stock:
+        if len(period)>0:
+            K_GT = K[K.loc[K.index.intersection(period),s]>threshold]
+        else:
+            K_GT = K[K.loc[:,s]>threshold]
+        output[s] = list(K_GT[s].dropna().index.strftime('%Y-%m-%d'))
+    return output
 
+    
 if __name__=="__main__":
     with open("finlab_token.txt",mode='r') as f:
         finlab.login(f.readline())
@@ -48,22 +59,31 @@ if __name__=="__main__":
     # close = data.get('price:收盤價')
     # high  = data.get('price:最高價')
     # low   = data.get('price:最低價')
-
-    K = data.indicator('kdj',length=24)[0]
-    K_GT_80 = K[K.loc['2021':'2023',['9906']]>80]
-    xxx=dict()
-    for c in K_GT_80.columns:
-        print(c)
-        Day_GT_80_2231 = K_GT_80[c].dropna().index
-        Day_EQ_50_2231 = set()
-        for d in Day_GT_80_2231:
-            GT = K[K.loc[K.index<d,[c]]<50].dropna()
-            if not GT.empty:
-                Day_EQ_50_2231.add(GT.index[-1])
-        if len(Day_EQ_50_2231)>0:
-            y = list(sorted(Day_EQ_50_2231))
-            xxx[c]=y
+    period = pd.date_range(start='2022',end='2023')
+    K_GT = get_K_GT(period=period,stock=['2231'],length=24,threshold=80)
     pass
+    # K = data.indicator('kdj',length=24)[0]
+    # K_GT_80 = K[K.loc['2021':'2023',['2231']]>80]
+    # xxx=dict()
+    # for c in K_GT_80.columns:
+    #     print(c)
+    #     Day_GT_80_2231 = K_GT_80[c].dropna().index
+    #     Day_EQ_50_2231 = set()
+    #     for d in Day_GT_80_2231:
+    #         GT = K[K.loc[K.index<d,[c]]<50].dropna()
+    #         if not GT.empty:
+    #             Day_EQ_50_2231.add(GT.index[-1])
+    #     if len(Day_EQ_50_2231)>0:
+    #         y = list(sorted(Day_EQ_50_2231))
+    #         xxx[c]=y
+    # pass
+    ########OK###########
+    period_data=bt.loc['2022-06-15':'2022-08-15']
+    x=period_data.reset_index().groupby(['stock_id','broker']).sum().loc['2231']
+    y=x.assign(balance=x['buy']-x['sell']).nlargest(15,'balance')['balance']
+    y.index=broker_name.loc[y.index]['name']
+########OK###########
+
     # search_BB_Uband_hit(data)
 #############################################################
     # #BBand帶寬%, 5%以下=>窄
