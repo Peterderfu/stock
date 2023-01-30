@@ -9,8 +9,8 @@ def rotation_break(data,bband,NDay,break_rate):
   #break_rate:布林上(下)軌突破斜率
   print(f"尋找布林帶寬小於{bband}%且持續{NDay}日")
 
-  #get BBand indicator
-  upper,middle,lower= data.indicator('BBANDS',timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.EMA)
+  #get BBand indicator, parameter {timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.SMA} is identical to XQs'
+  upper,middle,lower= data.indicator('BBANDS',timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.SMA)
   #calculate BBand width
   width = ((upper/lower)-1)*100
   #calculate launch rate

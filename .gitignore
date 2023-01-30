@@ -1,2 +1,15 @@
 __pycache__/peterlib.cpython-37.pyc
 finlab_token.txt
+finlab_db/broker_mapping.pickle
+finlab_db/broker_transactions.pickle
+finlab_db/company_basic_info.pickle
+finlab_db/expiry.pkl
+finlab_db/price#成交股數.pickle
+finlab_db/price#收盤價.pickle
+finlab_db/price#最低價.pickle
+finlab_db/price#最高價.pickle
+finlab_db/price#開盤價.pickle
+finlab_db/stock_names.pkl
+00733.csv
+00733.json
+00733.xlsx
