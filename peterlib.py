@@ -1,5 +1,6 @@
 from finlab import data
 from talib import MA_Type
+from datetime import datetime,timedelta
 
 def My_BBANDS(data):
     return data.indicator('BBANDS',timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.EMA)
@@ -25,3 +26,22 @@ def rotation_break(data,bband,NDay,break_rate):
   cond_2 = abs(brk) > abs(break_rate)     #突破斜率大於break_rate值
   entries = cond_1 & cond_2
   return entries
+
+def rotation_break_today(data,bband,NDay,break_rate):
+  cbi = data.get('company_basic_info')
+  df = rotation_break(data,bband,NDay,break_rate)
+  now = datetime.now()
+  if now.hour < 18: # if time is earlier than 18 o'clock, go to previous day
+    now = now - timedelta(days = 1)
+  d = now.strftime("%Y-%m-%d")
+  stocks = df.loc[d]
+  name_list = []
+  for s in stocks.index:
+    if (stocks[s] == True):
+      try:
+        name = cbi[cbi['stock_id'] == s].values[-1][-1]        
+      except:
+        name = "N/A"        
+      name = name+"("+s+")"
+      name_list.append(d + ":" + name)
+  return name_list

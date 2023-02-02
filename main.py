@@ -3,7 +3,8 @@ from finlab import data, backtest
 import pandas as pd
 import finlab,json
 from talib import MA_Type
-from peterlib import rotation_break,My_BBANDS
+# from peterlib import rotation_break,My_BBANDS
+from peterlib import *
 import pandas_ta as ta
 import numpy as np
 # broker_name = data.get('broker_mapping')
@@ -99,58 +100,51 @@ if __name__=="__main__":
     N=10
     #突破斜率%
     G=1
-    rotation_break_result = rotation_break(data,W,N,G)
-    #開始觀察日
-    observe_date = '2023-1-31'
-    #觀察日數(開始觀察日往前的日數)
-    N=365
-    #發動後觀察天數
-    days_after_launch = 10
-    #觀察時突破比例(%)
-    breaking_ratio = 5
-    period_result = rotation_break_result[(pd.to_datetime(observe_date)-pd.Timedelta(days=N)):pd.to_datetime(observe_date)]
-    # period_result = rotation_break_result
-    # for c in period_result.columns:
-    #     match = period_result[c][period_result[c]==True]
-    #     if not match.empty:
-    #        print(match.name + ":" + match.index[0].strftime('%Y/%m/%d'))
-        
-    cbi = data.get('company_basic_info')
-    close = data.get('price:收盤價')
-    #列出股票代號：發動日期
-    for c in period_result.columns:
-        stock_series = period_result[c]
-        day_with_signal = stock_series[stock_series==True]
-        info = []
-        if len(day_with_signal) > 0:
-            # P1 = close[c]
-            P1 = close[c].reset_index()
-            # if G > 0:
-            #     P2 = close[c].shift(-1*days_after_launch).rolling(days_after_launch).max() # days_after_launch天內最大價格
-            # else:
-            #     P2 = close[c].shift(-1*days_after_launch).rolling(days_after_launch).min() # days_after_launch天內最小價格
+    # rotation_break_result = rotation_break(data,W,N,G)
+    print(rotation_break_today(data,W,N,G))
+
+#     #開始觀察日
+#     observe_date = '2023-2-1'
+#     #觀察日數(開始觀察日往前的日數)
+#     N=0
+#     #發動後觀察天數
+#     days_after_launch = 10
+#     #觀察時突破比例(%)
+#     breaking_ratio = 5
+    
+#     period_result = rotation_break_result[(pd.to_datetime(observe_date)-pd.Timedelta(days=N)):pd.to_datetime(observe_date)]
+#     for c in period_result.columns:
+#         match = period_result[c][period_result[c]==True]
+#         if not match.empty:
+#            print(match.name + ":" + match.index[0].strftime('%Y/%m/%d'))
+#     exit
+#     cbi = data.get('company_basic_info')
+#     close = data.get('price:收盤價')
+#     #列出股票代號：發動日期
+#     for c in period_result.columns:
+#         stock_series = period_result[c]
+#         day_with_signal = stock_series[stock_series==True]
+#         info = []
+#         if len(day_with_signal) > 0:
+#             P1 = close[c].reset_index()
            
-            try:
-                name = cbi[cbi['stock_id'] == c].values[-1][-1]
-            except:
-                name = "N/A"
-            name = name+"("+c+"):"
-            for i in day_with_signal.index:
-                idx = P1[P1['date']==i].index
-                # px=P1.iloc[idx].values[-1][-1]
-                period = P1.iloc[idx[0]:idx[0]+days_after_launch]
-                desired_column = period.columns.values[-1]
-                p = period[desired_column]
-                pmax=np.nanmax(p.values)
-                pfirst = p.values[0]
-                # py=P1.iloc[idx[0]:idx[0]+days_after_launch]
-                day = i.strftime('%Y/%m/%d')
-                # if (abs(P2[i]-P1[i])/P1[i]) > (breaking_ratio/100):
-                if (abs(pmax-pfirst)/pfirst) > (breaking_ratio/100):
-                    info.append(day+"["+str(days_after_launch)+"d_"+str(breaking_ratio)+"%]")
-                else:
-                    pass
-                    # info.append(day)
-            if len(info)>0:        
-                print(name+",".join(info)) 
-#############################################################
+#             try:
+#                 name = cbi[cbi['stock_id'] == c].values[-1][-1]
+#             except:
+#                 name = "N/A"
+#             name = name+"("+c+"):"
+#             for i in day_with_signal.index:
+#                 idx = P1[P1['date']==i].index
+#                 period = P1.iloc[idx[0]:idx[0]+days_after_launch]
+#                 desired_column = period.columns.values[-1]
+#                 p = period[desired_column]
+#                 pmax=np.nanmax(p.values)
+#                 pfirst = p.values[0]
+#                 day = i.strftime('%Y/%m/%d')
+#                 if (abs(pmax-pfirst)/pfirst) > (breaking_ratio/100):
+#                     info.append(day+"["+str(days_after_launch)+"d_"+str(breaking_ratio)+"%]")
+#                 else:
+#                     pass
+#             if len(info)>0:        
+#                 print(name+",".join(info)) 
+# #############################################################
