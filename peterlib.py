@@ -1,7 +1,7 @@
 import requests
 import re
 from finlab import data
-from talib import MA_Type
+# from talib import MA_Type
 from datetime import datetime, timedelta
 from string import Template
 # import xml.etree.ElementTree as ET
@@ -56,13 +56,31 @@ def rotation_break_today(data, bband, NDay, break_rate):
   return name_list
 
 def get_price_twyahoo(stock_id=2702):
-  url = Template("https://tw.stock.yahoo.com/quote/${stock_id}")
-  resp = requests.get(url.substitute(stock_id=stock_id), allow_redirects=True)
-  # pat = r"<span class=\"Fz(32px) Fw(b) Lh(1) Mend(16px) D(f) Ai(c) C($c-trend-down)\">\d+(\.\d*)?</span>"
+  url = f"https://tw.stock.yahoo.com/quote/{stock_id}"
+  #xpath of close price
+  xpath = '/html/body/div[1]/div/div/div/div/div[5]/div[1]/div[1]/div/div[3]/div/section[1]/div[2]/div[2]/div/ul/li[1]/span[2]'
+  result = get_HTML_info(url,xpath)
+  if result:
+    return result
+  return None
+
+def has_warrant(stock_id=2330):
+  url = f"https://tw.stock.yahoo.com/quote/{stock_id}"
+  #xpath of warrant list
+  xpath = r'//*[@id="qsp-overview-warrants"]/div[1]/h2'
+  result = get_HTML_info(url,xpath)
+  if result:
+    return True
+  return None
+
+def get_HTML_info(url,xpath):
+  resp = requests.get(url, allow_redirects=True)
   parser = etree.HTMLParser()
   tree   = etree.parse(StringIO(resp.text), parser)
-  result = tree.xpath('/html/body/div[1]/div/div/div/div/div[5]/div[1]/div[1]/div/div[3]/div/section[1]/div[2]/div[2]/div/ul/li[1]/span[2]')
+  result = tree.xpath(xpath)
   if result:
     return result[0].text
   return None
-  
+
+if __name__=="__main__":
+  print(has_warrant(2702))
