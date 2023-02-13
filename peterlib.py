@@ -36,10 +36,14 @@ def rotation_break(data,bband,NDay,break_rate):
   return entries
 
 def rotation_break_period(period,data, bband, NDay, break_rate):
+  start = datetime.now()
+  if start.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
+    start = start - timedelta(days=1)
+  
   cbi = data.get('company_basic_info')
   df = rotation_break(data, bband, NDay, break_rate)
-  remains = period['days']
-  start = pd.to_datetime(period['start'])
+  remains = period
+  start = pd.to_datetime(start)
   
   while True: # select the starting day
     if start in df.axes[0]:
@@ -59,32 +63,25 @@ def rotation_break_period(period,data, bband, NDay, break_rate):
         name = name+"("+s+")"
         name_list.append(d.strftime("%Y-%m-%d") + ":" + name)
   return name_list
+
+def rotation_break_month(data, bband, NDay, break_rate):
+  # now = datetime.now()
+  # if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
+  #   now = now - timedelta(days=1)
+  return rotation_break_period(30,data, bband, NDay, break_rate)
+
 def rotation_break_week(data, bband, NDay, break_rate):
-  now = datetime.now()
-  if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
-    now = now - timedelta(days=1)
-  return rotation_break_period({'start':now.strftime("%Y-%m-%d"),'days':7},data, bband, NDay, break_rate)
+  # now = datetime.now()
+  # if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
+  #   now = now - timedelta(days=1)
+  return rotation_break_period(7,data, bband, NDay, break_rate)
 
 def rotation_break_today(data, bband, NDay, break_rate):
-  now = datetime.now()
-  if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
-    now = now - timedelta(days=1)
-  d = now.strftime("%Y-%m-%d")  
-  period = {"start":now,"days":1}
-  # rotation_break_period(period,data, bband, NDay, break_rate)
-  cbi = data.get('company_basic_info')
-  df = rotation_break(data, bband, NDay, break_rate)  
-  stocks = df.loc[d]
-  name_list = []
-  for s in stocks.index:
-    if (stocks[s] == True):
-      try:
-        name = cbi[cbi['stock_id'] == s].values[-1][-1]
-      except:
-        name = "N/A"
-      name = name+"("+s+")"
-      name_list.append(d.strftime("%Y-%m-%d")+ ":" + name)
-  return name_list
+  # now = datetime.now()
+  # if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
+  #   now = now - timedelta(days=1)
+  return rotation_break_period(1,data, bband, NDay, break_rate)
+  
 
 def get_price_twyahoo(stock_id=2702):
   url = f"https://tw.stock.yahoo.com/quote/{stock_id}"

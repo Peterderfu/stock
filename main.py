@@ -106,8 +106,9 @@ if __name__=="__main__":
     #突破斜率%
     G=0.7
     # rotation_break_result = rotation_break(data,W,N,G)
-    print(rotation_break_today(data,W,N,G))
+    # print(rotation_break_today(data,W,N,G))
     # print(rotation_break_week(data,W,N,G))
+    print(rotation_break_month(data,W,N,G))
     pass
 #     #開始觀察日
 #     observe_date = '2023-2-1'
