@@ -1,7 +1,8 @@
 import requests
 import re
+import pandas as pd
 from finlab import data
-# from talib import MA_Type
+from talib import MA_Type
 from datetime import datetime, timedelta
 from string import Template
 # import xml.etree.ElementTree as ET
@@ -24,25 +25,55 @@ def rotation_break(data,bband,NDay,break_rate):
   #calculate launch rate
   upper_pre = upper.shift(1)
   lower_pre = lower.shift(1)
-  # if break_rate>0:
-  #   brk = (abs(upper-upper_pre)/upper_pre)*100    
-  # else:
-  #   brk = (abs(lower-lower_pre)/lower_pre)*100
-  brk = ((upper-upper_pre)/upper_pre)*100    
+  if break_rate>0:
+    brk = ((upper-upper_pre)/upper_pre)*100    
+  else:
+    brk = ((lower-lower_pre)/lower_pre)*100
     
   cond_1 = (width < bband).sustain(NDay) #帶寬小於bband且持續NDay天
   cond_2 = abs(brk) > abs(break_rate)     #突破斜率大於break_rate值
   entries = cond_1 & cond_2
   return entries
 
-
-def rotation_break_today(data, bband, NDay, break_rate):
+def rotation_break_period(period,data, bband, NDay, break_rate):
   cbi = data.get('company_basic_info')
   df = rotation_break(data, bband, NDay, break_rate)
+  remains = period['days']
+  start = pd.to_datetime(period['start'])
+  
+  while True: # select the starting day
+    if start in df.axes[0]:
+      break
+    else:
+      start = start-timedelta(days=1)
+  start = df.axes[0].get_loc(start)
+  stocks = df.iloc[start-remains+1:start+1]
+  name_list = []
+  for s in stocks.columns:
+    for d in stocks[s].index:
+      if (stocks[s][d] == True):
+        try:
+          name = cbi[cbi['stock_id'] == s].values[-1][-1]
+        except:
+          name = "N/A"
+        name = name+"("+s+")"
+        name_list.append(d.strftime("%Y-%m-%d") + ":" + name)
+  return name_list
+def rotation_break_week(data, bband, NDay, break_rate):
   now = datetime.now()
   if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
     now = now - timedelta(days=1)
-  d = now.strftime("%Y-%m-%d")
+  return rotation_break_period({'start':now.strftime("%Y-%m-%d"),'days':7},data, bband, NDay, break_rate)
+
+def rotation_break_today(data, bband, NDay, break_rate):
+  now = datetime.now()
+  if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
+    now = now - timedelta(days=1)
+  d = now.strftime("%Y-%m-%d")  
+  period = {"start":now,"days":1}
+  # rotation_break_period(period,data, bband, NDay, break_rate)
+  cbi = data.get('company_basic_info')
+  df = rotation_break(data, bband, NDay, break_rate)  
   stocks = df.loc[d]
   name_list = []
   for s in stocks.index:
@@ -52,7 +83,7 @@ def rotation_break_today(data, bband, NDay, break_rate):
       except:
         name = "N/A"
       name = name+"("+s+")"
-      name_list.append(d + ":" + name)
+      name_list.append(d.strftime("%Y-%m-%d")+ ":" + name)
   return name_list
 
 def get_price_twyahoo(stock_id=2702):

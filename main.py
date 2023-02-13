@@ -100,14 +100,15 @@ if __name__=="__main__":
     # search_BB_Uband_hit(data)
 #############################################################
     #BBand帶寬%, 5%以下=>窄
-    W=6
+    W=5
     #帶寬小於W之連續天數
     N=10
     #突破斜率%
-    G=1
-    rotation_break_result = rotation_break(data,W,N,G)
+    G=0.7
+    # rotation_break_result = rotation_break(data,W,N,G)
     print(rotation_break_today(data,W,N,G))
-
+    # print(rotation_break_week(data,W,N,G))
+    pass
 #     #開始觀察日
 #     observe_date = '2023-2-1'
 #     #觀察日數(開始觀察日往前的日數)
