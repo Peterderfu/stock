@@ -1,5 +1,6 @@
 import requests
 import re
+import finlab
 import pandas as pd
 from finlab import data
 from talib import MA_Type
@@ -22,17 +23,25 @@ def rotation_break(data,bband,NDay,break_rate):
   upper,middle,lower= data.indicator('BBANDS',timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.SMA)
   #calculate BBand width
   width = ((upper/lower)-1)*100
+  cond_1 = (width < bband).sustain(NDay) #帶寬小於bband且持續NDay天
   #calculate launch rate
   upper_pre = upper.shift(1)
   lower_pre = lower.shift(1)
   if break_rate>0:
     brk = ((upper-upper_pre)/upper_pre)*100    
+    cond_2 = brk > break_rate     #突破斜率大於break_rate值
   else:
     brk = ((lower-lower_pre)/lower_pre)*100
-    
-  cond_1 = (width < bband).sustain(NDay) #帶寬小於bband且持續NDay天
-  cond_2 = abs(brk) > abs(break_rate)     #突破斜率大於break_rate值
-  entries = cond_1 & cond_2
+    cond_2 = abs(brk) > abs(break_rate)     #突破斜率大於break_rate值
+  
+  entries = cond_1 & cond_2  
+  cond_3 = volumn_below(3)
+  entries = entries & cond_3
+  return entries
+def volumn_below(N):
+  vol = data.get('price:成交股數')/1000
+  vol_MA5 = vol.rolling(5).mean()
+  entries = vol_MA5*N > vol
   return entries
 
 def rotation_break_period(period,data, bband, NDay, break_rate):
@@ -46,11 +55,11 @@ def rotation_break_period(period,data, bband, NDay, break_rate):
   start = pd.to_datetime(start)
   
   while True: # select the starting day
-    if start in df.axes[0]:
+    if start.strftime("%Y-%m-%d") in df.axes[0]:
       break
     else:
       start = start-timedelta(days=1)
-  start = df.axes[0].get_loc(start)
+  start = df.axes[0].get_loc(start.strftime("%Y-%m-%d"))
   stocks = df.iloc[start-remains+1:start+1]
   name_list = []
   for s in stocks.columns:
@@ -65,21 +74,12 @@ def rotation_break_period(period,data, bband, NDay, break_rate):
   return name_list
 
 def rotation_break_month(data, bband, NDay, break_rate):
-  # now = datetime.now()
-  # if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
-  #   now = now - timedelta(days=1)
   return rotation_break_period(30,data, bband, NDay, break_rate)
 
 def rotation_break_week(data, bband, NDay, break_rate):
-  # now = datetime.now()
-  # if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
-  #   now = now - timedelta(days=1)
   return rotation_break_period(7,data, bband, NDay, break_rate)
 
 def rotation_break_today(data, bband, NDay, break_rate):
-  # now = datetime.now()
-  # if now.hour < 18:  # if time is earlier than 18 o'clock, go to previous day
-  #   now = now - timedelta(days=1)
   return rotation_break_period(1,data, bband, NDay, break_rate)
   
 
@@ -111,4 +111,8 @@ def get_HTML_info(url,xpath):
   return None
 
 if __name__=="__main__":
-  print(has_warrant(2702))
+  with open("finlab_token.txt",mode='r') as f:
+    finlab.login(f.readline())
+  data.set_storage(data.FileStorage())
+  volumn_below(3)
+  # print(has_warrant(2702))

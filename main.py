@@ -69,9 +69,9 @@ if __name__=="__main__":
         finlab.login(f.readline())
     data.set_storage(data.FileStorage())
     
-    price = get_price_twyahoo(stock_id=2330)
-    if price:
-        print(price)
+    # price = get_price_twyahoo(stock_id=2330)
+    # if price:
+    #     print(price)
 
     # # data.set_storage(data.CacheStorage())
     # broker_mapping = data.get('broker_mapping',save_to_storage=True)
@@ -100,16 +100,16 @@ if __name__=="__main__":
     # search_BB_Uband_hit(data)
 #############################################################
     #BBand帶寬%, 5%以下=>窄
-    W=5
+    W=6
     #帶寬小於W之連續天數
     N=10
     #突破斜率%
     G=0.7
     # rotation_break_result = rotation_break(data,W,N,G)
-    # print(rotation_break_today(data,W,N,G))
+    print(rotation_break_today(data,W,N,G))
     # print(rotation_break_week(data,W,N,G))
-    print(rotation_break_month(data,W,N,G))
-    pass
+    # print(rotation_break_month(data,W,N,G))
+    # pass
 #     #開始觀察日
 #     observe_date = '2023-2-1'
 #     #觀察日數(開始觀察日往前的日數)
