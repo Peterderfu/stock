@@ -2,13 +2,21 @@ import requests
 import re
 import pandas as pd
 from finlab import data
-from talib import MA_Type
+# from talib import MA_Type
 from datetime import datetime, timedelta
 from string import Template
 # import xml.etree.ElementTree as ET
 from lxml import etree
 from io import StringIO
 # from lxml.html import parse
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 def My_BBANDS(data):
     return data.indicator('BBANDS',timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.EMA)
@@ -100,6 +108,34 @@ def has_warrant(stock_id=2330):
   if result:
     return True
   return None
+def get_warrant_info(stock_id=2330):
+  service = ChromeService(executable_path=ChromeDriverManager().install())
+  driver = webdriver.Chrome(service=service)
+  url = 'https://www.warrantwin.com.tw/eyuanta/Warrant/Search.aspx'
+  # driver = webdriver.Chrome()
+  driver.get(url)
+  # xpath_reset = '//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[3]/a[2]' #重設按鈕
+  # elem = driver.find_element(By.XPATH, xpath_reset)
+  # elem.click()
+  elem_reset = driver.find_element(By.LINK_TEXT,"重設")
+  elem_reset.click()
+  elem_select = Select(driver.find_element(By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[1]/div[1]/div[1]/table/tbody/tr[3]/td/div/select'))
+  elem_select.select_by_visible_text('全部')
+
+  # try:
+  #   elem_input = WebDriverWait(driver, 10).until(
+  #       EC.presence_of_element_located((By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')))
+  # finally:
+  #   driver.quit()
+  # elem_input = driver.find_element(By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')
+  # elem_input.clear()
+  elem_input = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')))
+ 
+  elem_input.send_keys(stock_id)
+  elem_query = driver.find_element(By.LINK_TEXT,"查詢")
+  elem_query.click()
+  assert elem_select is not None
 
 def get_HTML_info(url,xpath):
   resp = requests.get(url, allow_redirects=True)
@@ -111,4 +147,4 @@ def get_HTML_info(url,xpath):
   return None
 
 if __name__=="__main__":
-  print(has_warrant(2702))
+  print(get_warrant_info())
