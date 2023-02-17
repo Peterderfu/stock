@@ -3,7 +3,7 @@ import re
 import finlab
 import pandas as pd
 from finlab import data
-# from talib import MA_Type
+from talib import MA_Type
 from datetime import datetime, timedelta
 from string import Template
 # import xml.etree.ElementTree as ET
@@ -18,9 +18,13 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+from selenium.webdriver.common.action_chains import ActionChains
+def init():
+  with open("finlab_token.txt",mode='r') as f:
+    finlab.login(f.readline())
+  data.set_storage(data.FileStorage()) 
 def My_BBANDS(data):
-    return data.indicator('BBANDS',timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.EMA)
+    return data.indicator('BBANDS',timeperiod=20,nbdevup=2.0, nbdevdn=2.0,matype=MA_Type.SMA)
 def rotation_break(data,bband,NDay,break_rate):
   #bband:BBand帶寬%, 5%以下=>窄
   #NDay:帶寬小於bband之連續天數
@@ -43,9 +47,13 @@ def rotation_break(data,bband,NDay,break_rate):
     cond_2 = abs(brk) > abs(break_rate)     #突破斜率大於break_rate值
   
   entries = cond_1 & cond_2  
-  cond_3 = volumn_below(3)
-  entries = entries & cond_3
+  # cond_3 = volumn_below(3)
+  # entries = entries & cond_3
   return entries
+def price_below_bband_upper(data):
+  upper,middle,lower= My_BBANDS(data)
+  return (upper > data.get('price:最高價'))
+
 def volumn_below(N):
   vol = data.get('price:成交股數')/1000
   vol_MA5 = vol.rolling(5).mean()
@@ -128,15 +136,26 @@ def get_warrant_info(stock_id=2330):
   # finally:
   #   driver.quit()
   # elem_input = driver.find_element(By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')
+  # elem_input = driver.find_element(By.CLASS_NAME,"ng-pristine,ng-valid,ng-touched,ng-not-empty")
+  elem_input = driver.find_element(By.CLASS_NAME,"ng-pristine,ng-valid,ng-untouched,ng-not-empty")
   # elem_input.clear()
-  elem_input = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')))
- 
+  # elem_input = WebDriverWait(driver, 10).until(
+  #       EC.element_to_be_clickable((By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')))
+  # driver.execute_script("arguments[0].click();", elem_input)
+  # driver.implicitly_wait(10)
+  # ActionChains(driver).move_to_element(elem_input).click(elem_input).perform()
+  elem_input.click()
   elem_input.send_keys(stock_id)
   elem_query = driver.find_element(By.LINK_TEXT,"查詢")
   elem_query.click()
   assert elem_select is not None
-
+def get_warrant_info_kgi(stock_id=2330):
+  service = ChromeService(executable_path=ChromeDriverManager().install())
+  driver = webdriver.Chrome(service=service)
+  url = 'https://warrant.kgi.com/EDWebSite/Views/WarrantSearch/WarrantSearch.aspx'  
+  driver.get(url)
+  elem_reset = driver.find_element(By.CLASS_NAME,"k-input")
+  assert elem_reset is not None
 def get_HTML_info(url,xpath):
   resp = requests.get(url, allow_redirects=True)
   parser = etree.HTMLParser()
@@ -145,6 +164,72 @@ def get_HTML_info(url,xpath):
   if result:
     return result[0].text
   return None
+def search_BB_Uband_hit(data):
+    upper,middle,lower= My_BBANDS(data)
+    close = data.get('price:收盤價')
+    close_pre = close.shift(-1)
+    cbi = data.get('company_basic_info')
+    x=(close>upper) & (close_pre<upper)
+    for c in x.columns:
+        stock_series = x[c]
+        days_with_signal = x[x==True]
+        info = []
+        if len(days_with_signal) > 0:
+            try:
+                name = cbi[cbi['stock_id'] == c].values[-1][-1]
+            except:
+                name = "N/A"
+            name = name+"("+c+"):"
+            for i in days_with_signal.index:
+                day = i.strftime('%Y/%m/%d')
+                info.append(day)
+                    
+            print(name+",".join(info)) 
 
+def get_K_GT(period,stocks,length=9,threshold_high=80,threshold_low=50):
+#return the dates with K>threshold_high of the stock
+#取得股價K值=threshold_high時，往前K值=threshold_low的日期
+    K = data.indicator('kdj',length=length,save_to_storage=True)[0]
+    output=dict()
+    for s in stocks:
+        tmp = []
+        if len(period)>0:
+            K_H = K[K.loc[K.index.intersection(period),s]>threshold_high][s].dropna()
+        else:
+            K_H = K[K.loc[:,s]>threshold_high][s].dropna()
+        
+        for dH in K_H.index:
+        # for r in K_H.iterrows():
+            K_L = K[K.loc[K.index<dH,[s]]<threshold_low][s].dropna()
+            if not K_L.empty:
+                dL = K_L.index[-1]
+                tmp.append({'H':(dH.strftime('%Y-%m-%d'),K_H[dH]),
+                             'L':(dL.strftime('%Y-%m-%d'),K_L[dL])})
+        output[s]=tmp
+    return output
+
+def tmp():
+  pass
+  # NLargest = 15 # N largest brokers of stock amount
+    # accDays = 30 #accumulation days
+    # period = pd.date_range(start='2021',end='2023')
+    # K_GT = get_K_GT(period=period,stocks=stocks,length=24,threshold_high=80,threshold_low=50)
+    # output = dict()
+    # for stock,dates in K_GT.items():
+    #     D = pd.Series([d['L'][0] for d in dates]).drop_duplicates()
+    #     tmpOutput = dict()
+    #     for endDate in D:
+    #         p = pd.date_range(end=endDate,periods=accDays,freq='D')
+    #         period_data=bt.loc[bt.index.intersection(p)]
+    #         x=period_data.reset_index().groupby(['stock_id','broker']).sum().loc[stock]
+    #         y=x.assign(balance=x['buy']-x['sell']).nlargest(NLargest,'balance')['balance']
+    #         y.index=broker_mapping.loc[y.index]['name']
+    #         tmpOutput[p[0].strftime('%Y-%m-%d')+':'+p[-1].strftime('%Y-%m-%d')] = [i+'('+str(y[i])+')' for i in y.index]
+    #     output[stock] = tmpOutput
+    # with open('00733.json','w') as f:
+    #     json.dump(output,f)
+    
+    # search_BB_Uband_hit(data)
 if __name__=="__main__":
-  print(has_warrant(2702))
+  init()
+  print(get_warrant_info(2702))
