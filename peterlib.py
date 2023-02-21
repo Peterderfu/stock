@@ -47,8 +47,8 @@ def rotation_break(data,bband,NDay,break_rate):
     cond_2 = abs(brk) > abs(break_rate)     #突破斜率大於break_rate值
   
   entries = cond_1 & cond_2  
-  # cond_3 = volumn_below(3)
-  # entries = entries & cond_3
+  cond_3 = volumn_below(3)
+  entries = entries & cond_3
   return entries
 def price_below_bband_upper(data):
   upper,middle,lower= My_BBANDS(data)
@@ -130,24 +130,16 @@ def get_warrant_info(stock_id=2330):
   elem_select = Select(driver.find_element(By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[1]/div[1]/div[1]/table/tbody/tr[3]/td/div/select'))
   elem_select.select_by_visible_text('全部')
 
-  # try:
-  #   elem_input = WebDriverWait(driver, 10).until(
-  #       EC.presence_of_element_located((By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')))
-  # finally:
-  #   driver.quit()
-  # elem_input = driver.find_element(By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')
-  # elem_input = driver.find_element(By.CLASS_NAME,"ng-pristine,ng-valid,ng-touched,ng-not-empty")
-  elem_input = driver.find_element(By.CLASS_NAME,"ng-pristine,ng-valid,ng-untouched,ng-not-empty")
-  # elem_input.clear()
-  # elem_input = WebDriverWait(driver, 10).until(
-  #       EC.element_to_be_clickable((By.XPATH,'//*[@id="mm-0"]/div[2]/div[1]/div/div[1]/div[2]/div[1]/table/tbody/tr[1]/td/div/input')))
-  # driver.execute_script("arguments[0].click();", elem_input)
-  # driver.implicitly_wait(10)
-  # ActionChains(driver).move_to_element(elem_input).click(elem_input).perform()
+  elem_input = driver.find_element(By.XPATH,'(//input[@type="text"])[2]')
   elem_input.click()
   elem_input.send_keys(stock_id)
+
   elem_query = driver.find_element(By.LINK_TEXT,"查詢")
   elem_query.click()
+
+  elem_export = driver.find_element(By.LINK_TEXT,"匯出excel")
+  elem_export.click()
+  
   assert elem_select is not None
 def get_warrant_info_kgi(stock_id=2330):
   service = ChromeService(executable_path=ChromeDriverManager().install())
@@ -207,7 +199,24 @@ def get_K_GT(period,stocks,length=9,threshold_high=80,threshold_low=50):
                              'L':(dL.strftime('%Y-%m-%d'),K_L[dL])})
         output[s]=tmp
     return output
+def break_nextday_stat(data, bband, NDay, break_rate):
+  lines = []
+  df_break = rotation_break_period(720,data, bband, NDay, break_rate)
+  close = data.get('price:收盤價')
+  close_next = close.shift(-1)
+  for d in df_break:
+    m = re.match('(?P<date>\d{4}-\d{2}-\d{2})(?=:).+(?P<stock>(?<=\()\d+(?=\)))',d)
+    if m:
+      date = m.group('date')
+      stock = m.group('stock')
+      c1 = close.loc[date,stock]
+      c2 = close_next.loc[date,stock]
+      v = str(((c2-c1)/c1)*100)
+      lines.append(date + ','+ stock + ',' + v + '\n')
+  with open('log.csv','w') as f:
+      f.writelines(lines)
 
+  
 def tmp():
   pass
   # NLargest = 15 # N largest brokers of stock amount
@@ -232,4 +241,4 @@ def tmp():
     # search_BB_Uband_hit(data)
 if __name__=="__main__":
   init()
-  print(get_warrant_info(2702))
+  print(get_warrant_info(2231))
