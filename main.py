@@ -12,14 +12,14 @@ if __name__=="__main__":
     init()
 #############################################################
     #BBand帶寬%, 5%以下=>窄
-    W=6
+    W=5
     #帶寬小於W之連續天數
-    N=5
+    N=20
     #突破斜率%
     G=0.8
-    break_nextday_stat(data,W,N,G)
+    # break_nextday_stat(data,W,N,G)
     # rotation_break_result = rotation_break(data,W,N,G)
-    # print(rotation_break_today(data,W,N,G))
+    print(rotation_break_today(data,W,N,G))
     # print(rotation_break_week(data,W,N,G))
     # print(rotation_break_month(data,W,N,G))
 

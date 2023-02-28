@@ -19,6 +19,7 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
+import plotly.express as px
 def init():
   with open("finlab_token.txt",mode='r') as f:
     finlab.login(f.readline())
@@ -215,8 +216,17 @@ def break_nextday_stat(data, bband, NDay, break_rate):
       lines.append(date + ','+ stock + ',' + v + '\n')
   with open('log.csv','w') as f:
       f.writelines(lines)
-
+def volume_profile(date):
+  date = '2022-07-01'
   
+  close = data.get('price:收盤價')
+  vol = data.get('price:成交股數')
+  date = close.index>date
+
+  close = close[date]
+  vol = vol[date]
+  px.histogram(data, x='volume', y='close', nbins=150, orientation='h').show()
+
 def tmp():
   pass
   # NLargest = 15 # N largest brokers of stock amount
@@ -241,4 +251,4 @@ def tmp():
     # search_BB_Uband_hit(data)
 if __name__=="__main__":
   init()
-  print(get_warrant_info(2231))
+  volume_profile('2022-07-01')
