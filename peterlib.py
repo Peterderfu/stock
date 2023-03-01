@@ -217,16 +217,24 @@ def break_nextday_stat(data, bband, NDay, break_rate):
   with open('log.csv','w') as f:
       f.writelines(lines)
 def volume_profile(date):
-  date = '2022-07-01'
+  date = '2022-12-01'
   
   close = data.get('price:收盤價')
   vol = data.get('price:成交股數')
-  date = close.index>date
+  date = close.index>=date 
+  # close.index<='2023-02-17'
+  date="'2022-12-01':'2023-02-17'"
+  stock = '2706'
+  # close = close[date][stock]
+  # vol = vol[date][stock]
+  close = close.loc['2022-12-01':'2023-02-17',[stock]]
+  vol = vol.loc['2022-12-01':'2023-02-17',[stock]]
 
-  close = close[date]
-  vol = vol[date]
-  px.histogram(data, x='volume', y='close', nbins=150, orientation='h').show()
-
+  close = close.reset_index()
+  vol = vol.reset_index()
+  vol_close = vol.merge(close,on='date')
+  h = px.histogram(vol_close, x=vol_close.columns[1], y=vol_close.columns[2], nbins=50, orientation='h').show()
+  pass
 def tmp():
   pass
   # NLargest = 15 # N largest brokers of stock amount

@@ -14,7 +14,7 @@ if __name__=="__main__":
     #BBand帶寬%, 5%以下=>窄
     W=5
     #帶寬小於W之連續天數
-    N=20
+    N=10
     #突破斜率%
     G=0.8
     # break_nextday_stat(data,W,N,G)
