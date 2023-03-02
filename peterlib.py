@@ -235,6 +235,34 @@ def volume_profile(date):
   vol_close = vol.merge(close,on='date')
   h = px.histogram(vol_close, x=vol_close.columns[1], y=vol_close.columns[2], nbins=50, orientation='h').show()
   pass
+
+def investors_conference():
+  conf = data.get('investors_conference')
+  close = data.get('price:收盤價')
+  # data.get('price:最低價')
+  # data.get('price:最高價')
+  DATE = '2020'
+  # selected_dates = conf.index > '2020'
+  close = close[close.index > DATE]
+  close_next = close.shift(-1)
+  conf = conf[conf.index > DATE]
+  
+  lines = []
+  for date,row in conf.iterrows():
+    stock_id = row['stock_id']
+    try:
+      c1 = close.loc[date,[stock_id]][-1]
+      c2 = close_next.loc[date,[stock_id]][-1]
+    except KeyError:
+      continue
+    v = str(((c2-c1)/c1)*100)
+    lines.append(date.strftime('%Y-%m-%d') + ','+ stock_id + ',' + v + '\n')
+  
+  with open('log.csv','w') as f:
+    f.writelines(lines)
+    # conf = conf.loc[conf['stock_id']==stock_id]
+
+  
 def tmp():
   pass
   # NLargest = 15 # N largest brokers of stock amount
@@ -259,4 +287,5 @@ def tmp():
     # search_BB_Uband_hit(data)
 if __name__=="__main__":
   init()
-  volume_profile('2022-07-01')
+  # volume_profile('2022-07-01')
+  investors_conference()
