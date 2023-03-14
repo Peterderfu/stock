@@ -89,7 +89,13 @@ def rotation_break_period(period,data, bband, NDay, break_rate):
         name = name+"("+s+")"
         name_list.append(d.strftime("%Y-%m-%d") + ":" + name)
   return name_list
-
+def get_stockname_by_ID(stock_id):
+  cbi = data.get('company_basic_info')
+  try:
+    name = cbi[cbi['stock_id'] == stock_id].values[-1][-1]
+  except:
+    name = "N/A"
+  return name
 def rotation_break_month(data, bband, NDay, break_rate):
   return rotation_break_period(30,data, bband, NDay, break_rate)
 
@@ -116,7 +122,7 @@ def has_warrant(stock_id=2330):
   result = get_HTML_info(url,xpath)
   if result:
     return True
-  return None
+  return False
 def get_warrant_info(stock_id=2330):
   service = ChromeService(executable_path=ChromeDriverManager().install())
   driver = webdriver.Chrome(service=service)
@@ -247,21 +253,74 @@ def investors_conference():
   close_next = close.shift(-1)
   conf = conf[conf.index > DATE]
   
-  lines = []
+  df_raw_column_label = ['日期','代號','名稱','漲幅']
+  df_stat_column_label = ['代號','名稱','說明會次數','上漲機率','下跌機率','平均幅度','平均上漲幅度','平均下跌幅度','權證']
+
+  df_raw = pd.DataFrame(columns=df_raw_column_label)
   for date,row in conf.iterrows():
     stock_id = row['stock_id']
+    stock_name = row['公司名稱']
     try:
       c1 = close.loc[date,[stock_id]][-1]
       c2 = close_next.loc[date,[stock_id]][-1]
     except KeyError:
       continue
-    v = str(((c2-c1)/c1)*100)
-    lines.append(date.strftime('%Y-%m-%d') + ','+ stock_id + ',' + v + '\n')
+    v = ((c2-c1)/c1)*100
+    new_row = {df_raw_column_label[0]:date.strftime('%Y-%m-%d'), 
+               df_raw_column_label[1]:stock_id, 
+               df_raw_column_label[2]:stock_name,
+               df_raw_column_label[3]:v}
+    df_raw = df_raw.append(new_row, ignore_index=True)
+    
+  stock_ids = df_raw[df_raw_column_label[1]].unique()
+  if len(stock_ids) > 0:
+    df_stat = pd.DataFrame(columns=df_stat_column_label)
+    for s in stock_ids:
+      current_stock_info = df_raw.loc[df_raw[df_raw_column_label[1]]==s]
+      count = len(current_stock_info.index)
+      up_rows = current_stock_info[df_raw_column_label[3]]>=0
+      down_rows = current_stock_info[df_raw_column_label[3]]<0
+      v1 = up_rows.values.sum()/count                                         #上漲機率
+      v2 = 1 - v1                                                             #下跌機率
+      v3 = current_stock_info[df_raw_column_label[3]].abs().mean()            #平均幅度
+      v4 = current_stock_info[up_rows][df_raw_column_label[3]].mean()         #平均上漲幅度
+      v5 = abs(current_stock_info[down_rows][df_raw_column_label[3]].mean())  #平均下跌幅度
+      new_row = {
+        df_stat_column_label[0]:s, 
+        df_stat_column_label[1]:get_stockname_by_ID(s),
+        df_stat_column_label[2]:count, 
+        df_stat_column_label[3]:v1, 
+        df_stat_column_label[4]:v2,
+        df_stat_column_label[5]:v3,
+        df_stat_column_label[6]:v4,
+        df_stat_column_label[7]:v5,
+        df_stat_column_label[8]:has_warrant(s)}
+      df_stat = df_stat.append(new_row, ignore_index=True)
+    
+    with pd.ExcelWriter('output.xlsx') as writer: # dump data to excel file
+      df_raw.to_excel(writer, sheet_name='Raw data')
+      df_stat.to_excel(writer, sheet_name='Statistic')
+def get_investors_conference_date(id_file):
+  with open(id_file,'r') as f:
+    stock_date = {}
+    for l in f.readlines():
+      stock_date[l.strip()] = 'N/A'
+    # df = pd.DataFrame(index=[l.strip() for l in f.readlines()])
+  today = datetime.now()
   
-  with open('log.csv','w') as f:
-    f.writelines(lines)
-    # conf = conf.loc[conf['stock_id']==stock_id]
+  conf = data.get('investors_conference')
+  conf = conf[conf.index > today]
 
+  for id in stock_date.keys():
+    row = conf.loc[conf['stock_id']==id]
+    if not row.empty:
+      conf_date = ";".join([s.strftime('%Y-%m-%d') for s in row.index])
+      stock_date[id] = conf_date
+      # df = df.append({'date':conf_date}, ignore_index=True)
+      # df.at[id] = conf_date
+  df = pd.DataFrame.from_dict(stock_date,orient='index')
+  df.to_csv('date.csv',index=True)
+  pass
   
 def tmp():
   pass
@@ -288,4 +347,5 @@ def tmp():
 if __name__=="__main__":
   init()
   # volume_profile('2022-07-01')
-  investors_conference()
+  # investors_conference()
+  get_investors_conference_date('stock_id.txt')
